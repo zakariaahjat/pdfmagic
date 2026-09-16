@@ -1,0 +1,7 @@
+# Vercel local settings
+.vercel/
+
+# Generated exports from testing
+*.pdf
+*.docx
+~$*.docx
