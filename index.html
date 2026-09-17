@@ -485,7 +485,7 @@
             </div>
             <label class="check-row"><input type="checkbox" id="img-show-corrections" checked><span><b>Afficher mes corrections</b> directement sur le document (l'ancien texte est masqué à sa place)</span></label>
             <label class="check-row"><input type="checkbox" id="img-corr-visible" checked><span>Ajouter une section <b>«&nbsp;Texte corrigé&nbsp;»</b> visible en fin de PDF (utile si vous avez modifié le texte)</span></label>
-            <p class="hint">« Texte seul » : un document propre avec uniquement le texte. « Visuel du scan » : le scan d'origine avec chaque correction placée sur le texte. L'arabe est pris en charge. Cliquez sur une vignette pour zoomer.</p>
+            <p class="hint">« Texte seul » : un document propre avec uniquement le texte. « Visuel du scan » : le scan d'origine avec chaque correction placée sur le texte. L'arabe est pris en charge. Les tableaux sont détectés et exportés comme vrais tableaux. Cliquez sur une vignette pour zoomer.</p>
           </div>
         </section>
 
@@ -812,6 +812,10 @@
   }
 
   function buildTextPageImages(block, pageW, pageH){
+    if(block && block.table && block.table.rows && block.table.rows.length>=2){
+      const timgs=drawTableImages(block, pageW, pageH);
+      if(timgs.length) return timgs;
+    }
     const s = 2;
     const cw = Math.max(2, Math.round(pageW*s));
     const ch = Math.max(2, Math.round(pageH*s));
@@ -956,9 +960,10 @@
     };
   }
 
-  function drawOverlayText(ctx, text, x0, x1, yTop, baseSize, style){
+  function drawOverlayText(ctx, text, x0, x1, yTop, baseSize, style, lineBold){
     const size = Math.max(9, Math.round(baseSize * (style.scale/100)));
-    ctx.font = (style.bold ? '700 ' : '600 ') + size + 'px ' + OVERLAY_FONT_STACK;
+    const bold = !!lineBold || !!style.bold;
+    ctx.font = (bold ? '700 ' : '400 ') + size + 'px ' + OVERLAY_FONT_STACK;
     ctx.textBaseline = 'top';
     const maxW = Math.max((x1-x0)-4, 24);
     const wrapped = wrapCanvasText(ctx, text, maxW);
@@ -988,7 +993,30 @@
       const lines = page.lines||[];
       const avgH = lines.length ? lines.reduce((a,L)=>a+(((L.y1-L.y0)||12)), 0)/lines.length : 22;
       let stackY = lines.length ? (lines[lines.length-1].y1 + 18) : 20;
+      const isTable = !!(page.table && page.table.rows && page.table.cols && lines.length);
 
+      if(isTable){
+        const dataRows = editedTexts.filter((ln,k)=>k!==1);
+        lines.forEach((box,i)=>{
+          const row = page.table.rows[i]; if(!row) return;
+          const nw = i===0 ? dataRows[0] : dataRows[i+1];
+          if(nw==null) return;
+          if(normalizeLine(nw) === normalizeLine(box.origText||'')) return;
+          const cells = parseRowCells(nw, row.cells.length);
+          const h = (box.y1-box.y0) || 12;
+          const base = Math.max(10, Math.min(64, h*0.72));
+          const origColor = lineColorFromCanvas(ctx, box);
+          const bold = estimateLineBold(ctx, box);
+          ctx.fillStyle = bg;
+          ctx.fillRect(box.x0-2, box.y0-2, (box.x1-box.x0)+4, h+4);
+          row.cells.forEach((origCell,ci)=>{
+            const cb = page.table.cols[ci]; if(!cb) return;
+            const txt = (cells[ci]!=null ? cells[ci] : origCell).trim();
+            if(!txt) return;
+            drawOverlayText(ctx, txt, cb.x0+4, cb.x1-4, box.y0, base, { ...style, color: origColor||style.color }, bold);
+          });
+        });
+      } else {
       pairs.forEach(pair=>{
         if(pair.N) return;
         if(pair.o === -1){
@@ -996,7 +1024,7 @@
           if(t && t.trim()){
             let size = Math.max(10, Math.min(64, avgH*0.72));
             size = Math.max(9, Math.round(size * (style.scale/100)));
-            ctx.font = (style.bold ? '700 ' : '600 ') + size + 'px ' + OVERLAY_FONT_STACK;
+            ctx.font = (style.bold ? '700 ' : '400 ') + size + 'px ' + OVERLAY_FONT_STACK;
             ctx.textBaseline = 'top';
             const wrapped = wrapCanvasText(ctx, t, canvas.width-24);
             wrapped.forEach(ln=>{
@@ -1029,9 +1057,11 @@
         ctx.fillRect(box.x0-2, box.y0-2, (box.x1-box.x0)+4, h+4);
         if(edited && edited.trim()){
           const size = Math.max(10, Math.min(64, h*0.72));
-          drawOverlayText(ctx, edited, box.x0, box.x1, box.y0, size, lineStyle);
+          const bold = estimateLineBold(ctx, box);
+          drawOverlayText(ctx, edited, box.x0, box.x1, box.y0, size, lineStyle, bold);
         }
       });
+      }
       return canvas.toDataURL('image/jpeg', 0.92);
     });
   }
@@ -1246,10 +1276,199 @@
         });
       });
     }
-    return out.sort((A,B)=> ((Math.abs(A.base-B.base)<2)?(A.x0-B.x0):(A.base-B.base)));
+        return out.sort((A,B)=> ((Math.abs(A.base-B.base)<2)?(A.x0-B.x0):(A.base-B.base)));
   }
 
-  function abortError(){ const e=new Error('annulé'); e.name='AbortError'; return e; }
+  function medianNum(a){
+    if(!a.length) return 0;
+    const s=[...a].sort((p,q)=>p-q);
+    return s[Math.floor(s.length/2)];
+  }
+  function cluster1D(sorted, tol){
+    const out=[];
+    sorted.forEach(v=>{
+      const last=out[out.length-1];
+      if(last && Math.abs(v-(last.sum/last.n)) <= tol){ last.sum+=v; last.n++; last.max=v; }
+      else out.push({ sum:v, n:1, min:v, max:v });
+    });
+    return out.map(c=>c.sum/c.n);
+  }
+  function detectTable(rec){
+    const words=((rec&&rec.words)||[]).filter(w=>w&&w.text&&String(w.text).trim()&&(w.confidence==null||w.confidence>=25));
+    if(words.length<8) return null;
+    const groups=new Map();
+    words.forEach((w,idx)=>{
+      const k=(w.line_id!=null)?('l'+w.line_id):('l'+(w.block_id||0)+'_'+(w.paragraph_id||0)+'_'+idx);
+      if(!groups.has(k)) groups.set(k,[]);
+      groups.get(k).push(w);
+    });
+    const rows=[...groups.values()].map(list=>{
+      const items=list.map(w=>{ const b=bbox(w.bbox); return { x0:b.x0, y0:b.y0, x1:b.x1, y1:b.y1, text:String(w.text).trim() }; });
+      items.sort((a,b)=>a.x0-b.x0);
+      return items;
+    }).filter(r=>r.length);
+    rows.sort((A,B)=>Math.min(...A.map(w=>w.y0))-Math.min(...B.map(w=>w.y0)));
+    if(rows.length<2) return null;
+    const medH=medianNum(rows.map(r=>Math.max(...r.map(w=>w.y1))-Math.min(...r.map(w=>w.y0))).filter(h=>h>0))||12;
+    const gaps=[];
+    rows.forEach(r=>{ for(let i=1;i<r.length;i++) gaps.push(r[i].x0-r[i-1].x1); });
+    if(!gaps.length) return null;
+    const medGap=medianNum(gaps.filter(g=>g>0))||1;
+    const minBig=Math.max(medH*0.55, medGap*2.2, 6);
+    const bounds=[];
+    rows.forEach(r=>{ for(let i=1;i<r.length;i++){ if((r[i].x0-r[i-1].x1)>minBig) bounds.push((r[i-1].x1+r[i].x0)/2); } });
+    if(bounds.length<2) return null;
+    const seps=cluster1D(bounds.sort((a,b)=>a-b), Math.max(medH*0.7, 10));
+    if(!seps.length) return null;
+    const left=Math.min(...rows.map(r=>r[0].x0));
+    const right=Math.max(...rows.map(r=>r[r.length-1].x1));
+    let cols=[]; let prev=left;
+    seps.forEach(x=>{ if(x>prev+4){ cols.push({ x0:prev, x1:x }); prev=x; } });
+    cols.push({ x0:prev, x1:right });
+    if(cols.length<2) return null;
+    let grid=rows.map(r=>{
+      const y0=Math.min(...r.map(w=>w.y0)), y1=Math.max(...r.map(w=>w.y1));
+      return { y0:y0, y1:y1, cells: cols.map(c=> r.filter(w=>((w.x0+w.x1)/2)>=c.x0-1 && ((w.x0+w.x1)/2)<=c.x1+1).map(w=>w.text).join(' ')) };
+    });
+    const used=cols.map((c,ci)=>grid.some(row=>row.cells[ci]&&row.cells[ci].trim()));
+    if(used.includes(false)){
+      cols=cols.filter((c,ci)=>used[ci]);
+      grid=grid.map(row=>({ y0:row.y0, y1:row.y1, cells:row.cells.filter((c,ci)=>used[ci]) }));
+    }
+    if(cols.length<2 || grid.length<2) return null;
+    const filled=grid.reduce((a,row)=>a+row.cells.filter(c=>c&&c.trim()).length,0);
+    if(!grid.some(row=>row.cells.filter(c=>c&&c.trim()).length>=2)) return null;
+    if(filled < grid.length*cols.length*0.35) return null;
+    return { cols:cols, rows:grid };
+  }
+  function gridToRows(grid){
+    if(!grid||!grid.rows) return [];
+    return grid.rows.map(r=>r.cells.map(c=>(c||'').replace(/\s+/g,' ').trim()));
+  }
+  function mdCell(t){ return (t||'').replace(/\|/g,'\\|').replace(/\n+/g,' ').trim(); }
+  function markdownFromGrid(grid){
+    const rows=gridToRows(grid);
+    if(!rows.length) return '';
+    const w=Math.max(...rows.map(r=>r.length));
+    const pad=r=>{ const a=r.slice(); while(a.length<w) a.push(''); return a; };
+    const line=r=>'| '+pad(r).map(mdCell).join(' | ')+' |';
+    const sep='| '+pad(rows[0]).map(()=>'---').join(' | ')+' |';
+    return [line(rows[0]), sep, ...rows.slice(1).map(line)].join('\n');
+  }
+  function parseMarkdownTable(text){
+    const lines=(text||'').split('\n').map(l=>l.trim()).filter(l=>l.indexOf('|')>=0);
+    if(lines.length<2) return null;
+    const cellsOf=l=>{ let s=l; if(s.charAt(0)==='|') s=s.slice(1); if(s.slice(-1)==='|') s=s.slice(0,-1); return s.split('|').map(c=>c.replace(/\\\|/g,'|').trim()); };
+    const isSep=r=>r.length&&r.every(c=>/^:?-{2,}:?$/.test(c.replace(/\s/g,'')));
+    const cleaned=lines.map(cellsOf).filter(r=>r.length&&!isSep(r));
+    if(cleaned.length<2) return null;
+    return cleaned;
+  }
+  function parseRowCells(line, n){
+    let s=(line||'').trim();
+    if(s.charAt(0)==='|') s=s.slice(1);
+    if(s.slice(-1)==='|') s=s.slice(0,-1);
+    const parts=s.split('|').map(c=>c.replace(/\\\|/g,'|').trim());
+    while(parts.length<n) parts.push('');
+    return parts;
+  }
+  function estimateLineBold(ctx, box){
+    try{
+      const x0=Math.max(0,Math.floor(box.x0)), y0=Math.max(0,Math.floor(box.y0));
+      const x1=Math.min(ctx.canvas.width-1,Math.ceil(box.x1)), y1=Math.min(ctx.canvas.height-1,Math.ceil(box.y1));
+      if(x1<=x0||y1<=y0) return false;
+      const data=ctx.getImageData(x0,y0,x1-x0+1,y1-y0+1).data;
+      let dark=0,total=0;
+      for(let i=0;i<data.length;i+=4){
+        total++;
+        if((0.299*data[i]+0.587*data[i+1]+0.114*data[i+2])<150) dark++;
+      }
+      return total ? (dark/total)>=0.20 : false;
+    }catch(e){ return false; }
+  }
+  function buildWordTable(rowsCells){
+    const dx=window.docx;
+    const align=dx.AlignmentType;
+    const border={ style:dx.BorderStyle.SINGLE, size:4, color:'9B9482' };
+    const nCols=Math.max(1,(rowsCells[0]||[]).length);
+    const mkCell=(txt, head)=>{
+      const isAra=hasArabic(txt||'');
+      const opts={
+        width:{ size: Math.max(1, Math.round(100/nCols)), type: dx.WidthType.PERCENTAGE },
+        borders:{ top:border, bottom:border, left:border, right:border },
+        margins:{ top:60, bottom:60, left:100, right:100 },
+        children:[ new dx.Paragraph({ alignment: isAra?align.RIGHT:align.LEFT, children:[ new dx.TextRun({ text:(txt&&txt.trim())?txt:' ', bold:!!head }) ] }) ]
+      };
+      if(head) opts.shading={ fill:'EFECE3' };
+      return new dx.TableCell(opts);
+    };
+    const rows=rowsCells.map((cells,ri)=> new dx.TableRow({ tableHeader: ri===0, children: cells.map(c=>mkCell(c, ri===0)) }));
+    return new dx.Table({ width:{ size:100, type:dx.WidthType.PERCENTAGE }, rows: rows });
+  }
+  function drawTableImages(block, pageW, pageH){
+    const rowsCells=gridToRows(block.table);
+    if(!rowsCells.length) return [];
+    const s=2, cw=Math.round(pageW*s), ch=Math.round(pageH*s);
+    const marginX=Math.round(48*s), marginTop=Math.round(72*s), marginBottom=Math.round(48*s);
+    const padX=7*s, padY=5*s, lineH=Math.round(15*s), size=10.5*s;
+    const fontStack='"Segoe UI",Tahoma,Arial,sans-serif';
+    const maxCols=Math.max(...rowsCells.map(r=>r.length));
+    const aligned=rowsCells.map(r=>{ const a=r.slice(); while(a.length<maxCols) a.push(''); return a; });
+    const meas=document.createElement('canvas').getContext('2d');
+    meas.font='400 '+size+'px '+fontStack;
+    const nat=[];
+    aligned.forEach(r=>r.forEach((c,i)=>{ const w=Math.max(meas.measureText(c||' ').width, meas.measureText(' ').width)+2*padX; nat[i]=Math.max(nat[i]||0,w); }));
+    const avail=cw-2*marginX;
+    const totalNat=nat.reduce((a,b)=>a+b,0)||1;
+    const ratio=totalNat>avail ? avail/totalNat : 1;
+    const widths=nat.map(w=>Math.max(w*ratio, 14*s));
+    const rowH=2*padY+lineH;
+    const perPage=Math.max(1, Math.floor((ch-marginTop-marginBottom)/rowH));
+    const images=[];
+    let canvas, ctx, y;
+    function newPage(){
+      canvas=document.createElement('canvas'); canvas.width=cw; canvas.height=ch;
+      ctx=canvas.getContext('2d'); ctx.fillStyle='#ffffff'; ctx.fillRect(0,0,cw,ch);
+      ctx.direction='ltr'; ctx.textAlign='center'; ctx.fillStyle='#1d3f34';
+      ctx.font='600 '+Math.round(15*s)+'px '+fontStack;
+      ctx.fillText(block.label||'Tableau', cw/2, Math.round(46*s));
+      y=marginTop;
+    }
+    function wrap(txt,w){ meas.font='400 '+size+'px '+fontStack; return wrapCanvasText(meas, txt, Math.max(10, w-2*padX)); }
+    function drawRow(cells, head){
+      const wrapped=cells.map((c,ci)=>wrap(c||'', widths[ci]));
+      const linesMax=Math.max(1, ...wrapped.map(w=>w.length));
+      const h=2*padY+linesMax*lineH;
+      if(y+h>ch-marginBottom){ images.push(canvas.toDataURL('image/jpeg',0.9)); newPage(); }
+      const tw=widths.reduce((a,b)=>a+b,0);
+      ctx.fillStyle=head?'#efece3':'#fbfaf6';
+      ctx.fillRect(marginX, y, tw, h);
+      ctx.strokeStyle='#9b9482'; ctx.lineWidth=1*s;
+      let x=marginX;
+      wrapped.forEach((wl,ci)=>{
+        const cwid=widths[ci], isAra=hasArabic(cells[ci]||'');
+        ctx.fillStyle='#1a1815';
+        ctx.font=(head?'700 ':'400 ')+size+'px '+fontStack;
+        ctx.direction=isAra?'rtl':'ltr';
+        ctx.textAlign=isAra?'right':'left';
+        const tx=isAra ? (x+cwid-padX) : (x+padX);
+        wl.forEach((ln,k)=>{ ctx.fillText(ln, tx, y+padY+(k+0.85)*lineH); });
+        ctx.beginPath(); ctx.moveTo(x,y); ctx.lineTo(x,y+h); ctx.stroke();
+        x+=cwid;
+      });
+      ctx.beginPath(); ctx.moveTo(x,y); ctx.lineTo(x,y+h); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(marginX,y); ctx.lineTo(x,y); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(marginX,y+h); ctx.lineTo(x,y+h); ctx.stroke();
+      y+=h;
+    }
+    newPage();
+    aligned.forEach((cells,ri)=>drawRow(cells, ri===0));
+    images.push(canvas.toDataURL('image/jpeg',0.9));
+    return images;
+  }
+
+  function abortError(){
+ const e=new Error('annulé'); e.name='AbortError'; return e; }
 
   async function ocrImage(src, langs, onProgress){
     if(abortRequested) throw abortError();
@@ -1268,7 +1487,10 @@
         res=await worker.recognize(src);
         data=(res&&res.data)||{};
       }
-      return { text:(data.text||'').trim(), confidence:data.confidence||0, words:data.words||[], lines:collectLines(data) };
+      let table=detectTable(data);
+      let md=table?markdownFromGrid(table):'';
+      if(!md) table=null;
+      return { text: table?md:(data.text||'').trim(), confidence:data.confidence||0, words:data.words||[], lines:collectLines(data), table:table||null };
     } finally {
       if(currentWorker===worker) currentWorker=null;
       try{ worker.terminate(); }catch(e){}
@@ -1325,7 +1547,7 @@
     try{
       const r=await ocrOnce(page,prefix,(s)=>'OCR — '+s, page.index!=null?page.index+1:null);
       if(abortRequested) return;
-      page.text=r.text; page.lines=r.lines; page.confidence=r.confidence;
+      page.text=r.text; page.lines=r.lines; page.confidence=r.confidence; page.table=r.table||null;
       scheduleSave(prefix);
       if(after) after();
     }catch(err){
@@ -1440,7 +1662,13 @@
     const children=[];
     blocks.forEach((b,i)=>{
       children.push(new Paragraph({ children:[ new TextRun({ text:(b.label||('Page '+(i+1))), bold:true, size:28 }) ] , spacing:{after:80}}));
-      textToParagraphs(b.text||'').forEach(p=>children.push(p));
+      const trows = b.table ? (parseMarkdownTable(b.text) || gridToRows(b.table)) : null;
+      if(trows && trows.length>=2){
+        children.push(buildWordTable(trows));
+        children.push(new Paragraph({ children:[ new TextRun({ text:' ' }) ], spacing:{ after:160 } }));
+      } else {
+        textToParagraphs(b.text||'').forEach(p=>children.push(p));
+      }
     });
     const doc=new Document({ sections:[{ children }] });
     return Packer.toBlob(doc);
@@ -1564,6 +1792,7 @@
       tag.className='tag '+(p.lines&&p.lines.length?'text':'scan');
       tag.textContent=(p.lines&&p.lines.length)?'texte':'scanné';
       title.appendChild(tag);
+      if(p.table){ const tg=document.createElement('span'); tg.className='tag text'; tg.textContent='tableau'; title.appendChild(tg); }
       head.appendChild(title);
       const acts=document.createElement('div'); acts.className='page-actions';
       acts.appendChild(makeBtn(true,false,'OCR cette page',IC.ocr,()=>ocrSinglePage('img',p,renderImgPages)));
@@ -1823,6 +2052,7 @@
       tag.className='tag '+(p.isScanned?'scan':'text');
       tag.textContent=p.isScanned?(p.lines&&p.lines.length?'texte (scanné)':'scanné'):'texte natif';
       title.appendChild(tag);
+      if(p.table){ const tg=document.createElement('span'); tg.className='tag text'; tg.textContent='tableau'; title.appendChild(tg); }
       head.appendChild(title);
       const acts=document.createElement('div'); acts.className='page-actions';
       if(p.isScanned) acts.appendChild(makeBtn(true,false,'OCR cette page',IC.ocr,()=>ocrSinglePage('pdf',p,renderPdfPages)));
