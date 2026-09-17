@@ -31,6 +31,7 @@
     --shadow-1:0 1px 0 rgba(6,59,109,.06), 0 1px 3px rgba(6,59,109,.08);
     --shadow-2:0 1px 0 rgba(6,59,109,.05), 0 14px 30px -18px rgba(6,59,109,.4);
     --ring:0 0 0 3px rgba(6,75,135,.28);
+    --header-fade:rgba(244,249,252,.92);
   }
   @media (prefers-color-scheme: dark){
     :root:not([data-theme="light"]){
@@ -41,6 +42,7 @@
       --success:#3FC98A; --success-soft:#123528; --danger:#F07B7B; --danger-soft:#3A2323;
       --shadow-1:0 1px 0 rgba(0,0,0,.4), 0 1px 3px rgba(0,0,0,.5);
       --shadow-2:0 1px 0 rgba(0,0,0,.4), 0 16px 32px -20px rgba(0,0,0,.8);
+      --header-fade:rgba(11,26,38,.92);
     }
   }
   :root[data-theme="dark"]{
@@ -51,6 +53,7 @@
     --success:#3FC98A; --success-soft:#123528; --danger:#F07B7B; --danger-soft:#3A2323;
     --shadow-1:0 1px 0 rgba(0,0,0,.4), 0 1px 3px rgba(0,0,0,.5);
     --shadow-2:0 1px 0 rgba(0,0,0,.4), 0 16px 32px -20px rgba(0,0,0,.8);
+    --header-fade:rgba(11,26,38,.92);
   }
   *{ box-sizing:border-box; }
   html{ scroll-behavior:smooth; }
@@ -68,7 +71,7 @@
 
   /* ---------- header ---------- */
   header.top{
-    position:sticky; top:0; z-index:40; background:linear-gradient(var(--paper) 65%, rgba(244,249,252,.92)); backdrop-filter:blur(8px);
+    position:sticky; top:0; z-index:40; background:linear-gradient(var(--paper) 65%, var(--header-fade)); backdrop-filter:blur(8px);
     display:flex; align-items:center; justify-content:space-between; gap:16px;
     border-bottom:2px solid var(--ink); padding:14px 0 12px; margin-bottom:24px; flex-wrap:wrap;
     transition:padding .2s ease, box-shadow .2s ease;
