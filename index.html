@@ -10,43 +10,45 @@
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root{
-    --paper:#F4F1E9;
+    --paper:#F4F9FC;
     --panel:#FFFFFF;
-    --ink:#232017;
-    --ink-soft:#6A6452;
-    --line:#DED6C2;
-    --accent:#2E6B56;
-    --accent-dark:#1F4C3D;
-    --accent-soft:#DFEAE4;
-    --rust:#8A4B32;
-    --rust-soft:#F1E2D8;
-    --gold:#A97F1F;
-    --gold-soft:#F5ECD2;
-    --danger:#9C3B3B;
-    --danger-soft:#F4E0DC;
+    --ink:#142B3D;
+    --ink-soft:#607D94;
+    --line:#DCEAF3;
+    --accent:#064B87;
+    --accent-dark:#063B6D;
+    --accent-soft:#E4EFF8;
+    --rust:#168BC4;
+    --rust-soft:#E2F1FA;
+    --gold:#F2A51A;
+    --gold-soft:#FDF0D4;
+    --success:#20A66A;
+    --success-soft:#E1F5EC;
+    --danger:#DC4C4C;
+    --danger-soft:#FBE3E3;
     --r:10px;
     --r-sm:7px;
-    --shadow-1:0 1px 0 rgba(35,32,23,.06), 0 1px 3px rgba(35,32,23,.08);
-    --shadow-2:0 1px 0 rgba(35,32,23,.05), 0 14px 30px -18px rgba(35,32,23,.4);
-    --ring:0 0 0 3px rgba(46,107,86,.28);
+    --shadow-1:0 1px 0 rgba(6,59,109,.06), 0 1px 3px rgba(6,59,109,.08);
+    --shadow-2:0 1px 0 rgba(6,59,109,.05), 0 14px 30px -18px rgba(6,59,109,.4);
+    --ring:0 0 0 3px rgba(6,75,135,.28);
   }
   @media (prefers-color-scheme: dark){
     :root:not([data-theme="light"]){
-      --paper:#17191516; --paper:#171915;
-      --panel:#232621; --ink:#EDE9DD; --ink-soft:#B4AE9C;
-      --line:#3A3B33; --accent:#5FAE93; --accent-dark:#7FC6AC; --accent-soft:#2A3C34;
-      --rust:#D08A66; --rust-soft:#3A2C24; --gold:#D9AE5C; --gold-soft:#3A3320;
-      --danger:#E08A7A; --danger-soft:#38241F;
+      --paper:#0B1A26;
+      --panel:#11293A; --ink:#E7F0F7; --ink-soft:#9FB6C7;
+      --line:#20415A; --accent:#3E9AD6; --accent-dark:#7FC0E8; --accent-soft:#16374C;
+      --rust:#4FB3E0; --rust-soft:#123A4E; --gold:#FFC857; --gold-soft:#3A3218;
+      --success:#3FC98A; --success-soft:#123528; --danger:#F07B7B; --danger-soft:#3A2323;
       --shadow-1:0 1px 0 rgba(0,0,0,.4), 0 1px 3px rgba(0,0,0,.5);
       --shadow-2:0 1px 0 rgba(0,0,0,.4), 0 16px 32px -20px rgba(0,0,0,.8);
     }
   }
   :root[data-theme="dark"]{
-    --paper:#171915;
-    --panel:#232621; --ink:#EDE9DD; --ink-soft:#B4AE9C;
-    --line:#3A3B33; --accent:#5FAE93; --accent-dark:#7FC6AC; --accent-soft:#2A3C34;
-    --rust:#D08A66; --rust-soft:#3A2C24; --gold:#D9AE5C; --gold-soft:#3A3320;
-    --danger:#E08A7A; --danger-soft:#38241F;
+    --paper:#0B1A26;
+    --panel:#11293A; --ink:#E7F0F7; --ink-soft:#9FB6C7;
+    --line:#20415A; --accent:#3E9AD6; --accent-dark:#7FC0E8; --accent-soft:#16374C;
+    --rust:#4FB3E0; --rust-soft:#123A4E; --gold:#FFC857; --gold-soft:#3A3218;
+    --success:#3FC98A; --success-soft:#123528; --danger:#F07B7B; --danger-soft:#3A2323;
     --shadow-1:0 1px 0 rgba(0,0,0,.4), 0 1px 3px rgba(0,0,0,.5);
     --shadow-2:0 1px 0 rgba(0,0,0,.4), 0 16px 32px -20px rgba(0,0,0,.8);
   }
@@ -66,7 +68,7 @@
 
   /* ---------- header ---------- */
   header.top{
-    position:sticky; top:0; z-index:40; background:linear-gradient(var(--paper) 65%, rgba(244,241,233,.92)); backdrop-filter:blur(8px);
+    position:sticky; top:0; z-index:40; background:linear-gradient(var(--paper) 65%, rgba(244,249,252,.92)); backdrop-filter:blur(8px);
     display:flex; align-items:center; justify-content:space-between; gap:16px;
     border-bottom:2px solid var(--ink); padding:14px 0 12px; margin-bottom:24px; flex-wrap:wrap;
     transition:padding .2s ease, box-shadow .2s ease;
@@ -128,10 +130,10 @@
     flex:none; width:34px; height:34px; border-radius:50%;
     background:var(--accent); color:#fff; font-family:'Inter',sans-serif; font-size:15px; font-weight:700;
     display:flex; align-items:center; justify-content:center; margin-top:2px;
-    box-shadow:0 4px 10px -6px rgba(46,107,86,.8);
+    box-shadow:0 4px 10px -6px rgba(6,75,135,.6);
   }
-  .step-num.gold{ background:var(--gold); box-shadow:0 4px 10px -6px rgba(169,127,31,.8); }
-  .step-num.rust{ background:var(--rust); box-shadow:0 4px 10px -6px rgba(138,75,50,.8); }
+  .step-num.gold{ background:var(--gold); box-shadow:0 4px 10px -6px rgba(242,165,26,.7); }
+  .step-num.rust{ background:var(--rust); box-shadow:0 4px 10px -6px rgba(22,139,196,.6); }
   .step-title{ flex:1; min-width:0; }
   .step-title h2{ font-size:17px; }
   .step-title p{ margin:3px 0 0; color:var(--ink-soft); font-size:13px; }
@@ -167,11 +169,11 @@
   }
   button:active{ transform:translateY(1px); }
   button:disabled{ opacity:.45; cursor:not-allowed; }
-  .btn-primary{ background:var(--accent); color:#fff; box-shadow:0 6px 14px -8px rgba(46,107,86,.9); }
+  .btn-primary{ background:var(--accent); color:#fff; box-shadow:0 6px 14px -8px rgba(6,75,135,.7); }
   .btn-primary:hover:not(:disabled){ background:var(--accent-dark); }
   .btn-secondary{ background:var(--panel); color:var(--ink); border-color:var(--line); }
   .btn-secondary:hover:not(:disabled){ border-color:var(--ink-soft); box-shadow:var(--shadow-1); }
-  .btn-rust{ background:var(--rust); color:#fff; box-shadow:0 6px 14px -8px rgba(138,75,50,.9); }
+  .btn-rust{ background:var(--rust); color:#fff; box-shadow:0 6px 14px -8px rgba(22,139,196,.7); }
   .btn-rust:hover:not(:disabled){ opacity:.9; }
   .btn-ghost{ background:transparent; color:var(--ink-soft); border-color:var(--line); font-size:12.5px; padding:7px 11px; }
   .btn-ghost:hover:not(:disabled){ color:var(--ink); border-color:var(--ink-soft); background:var(--panel); }
@@ -214,7 +216,7 @@
   .progress-fill{ height:100%; width:0%; background:linear-gradient(90deg, var(--accent), var(--accent-dark)); border-radius:999px; transition:width .2s ease; }
   .status{ font-size:13px; padding:10px 13px; border-radius:var(--r-sm); margin-top:14px; display:none; line-height:1.45; }
   .status.show{ display:block; }
-  .status.ok{ background:var(--accent-soft); color:var(--accent-dark); border:1px solid transparent; }
+  .status.ok{ background:var(--success-soft); color:var(--success); border:1px solid transparent; }
   .status.err{ background:var(--danger-soft); color:var(--danger); border:1px solid transparent; }
 
   /* ---------- check rows ---------- */
@@ -243,7 +245,7 @@
   .page-body{ display:grid; grid-template-columns:minmax(0,54%) minmax(0,46%); gap:16px; align-items:stretch; }
   .page-thumb{
     cursor:zoom-in; border:1px solid var(--line); border-radius:var(--r-sm);
-    background:#FBF8F1; padding:8px; text-align:center; overflow:auto; max-height:600px;
+    background:#F4F9FC; padding:8px; text-align:center; overflow:auto; max-height:600px;
     display:flex; align-items:center; justify-content:center;
     transition:box-shadow .15s;
   }
@@ -262,7 +264,7 @@
   .text-meta .count b{ color:var(--ink); }
   .page-num-badge{
     font-family:'Inter',sans-serif; font-size:11px; font-weight:800; color:#fff;
-    background:var(--accent); border-radius:999px; padding:3px 9px; box-shadow:0 3px 8px -4px rgba(46,107,86,.8);
+    background:var(--accent); border-radius:999px; padding:3px 9px; box-shadow:0 3px 8px -4px rgba(6,75,135,.6);
   }
 
   /* ---------- style bar ---------- */
@@ -287,7 +289,7 @@
   .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
 
   /* ---------- lightbox ---------- */
-  .lb{ position:fixed; inset:0; background:rgba(18,17,13,.86); z-index:100; display:none;
+  .lb{ position:fixed; inset:0; background:rgba(11,26,38,.88); z-index:100; display:none;
     align-items:center; justify-content:center; flex-direction:column; padding:16px; }
   .lb.open{ display:flex; animation:fadein .15s ease; }
   .lb-img-wrap{ max-width:94vw; max-height:78vh; overflow:auto; background:#fff; padding:10px; border-radius:10px; box-shadow:var(--shadow-2); }
@@ -324,8 +326,8 @@
   /* ---------- polish / upscale ---------- */
   body{
     background:
-      radial-gradient(1100px 520px at 85% -8%, rgba(46,107,86,.16), transparent 62%),
-      radial-gradient(900px 480px at -8% 14%, rgba(169,127,31,.12), transparent 55%),
+      radial-gradient(1100px 520px at 85% -8%, rgba(6,75,135,.14), transparent 62%),
+      radial-gradient(900px 480px at -8% 14%, rgba(242,165,26,.12), transparent 55%),
       var(--paper);
     background-attachment:fixed;
   }
@@ -333,23 +335,23 @@
   .step{ border-top:3px solid var(--line); border-radius:14px; }
   .steps > .step:nth-child(2){ border-top-color:var(--gold); }
   .steps > .step:nth-child(3){ border-top-color:var(--rust); }
-  .seal{ box-shadow:0 10px 22px -14px rgba(46,107,86,.85); }
+  .seal{ box-shadow:0 10px 22px -14px rgba(6,75,135,.7); }
   .brand h1{ letter-spacing:-0.015em; }
   .btn-primary, .btn-rust{ box-shadow:0 8px 18px -10px currentColor; }
   button:not(:disabled):hover{ transform:translateY(-1px); }
   button:not(:disabled):active{ transform:translateY(0); }
   .dropzone:hover{ transform:translateY(-1px); }
-  .dropzone svg{ filter:drop-shadow(0 4px 10px rgba(46,107,86,.35)); }
+  .dropzone svg{ filter:drop-shadow(0 4px 10px rgba(6,75,135,.3)); }
   .page-block:hover{ transform:translateY(-2px); }
-  .progress-fill{ box-shadow:0 0 10px rgba(46,107,86,.55); }
+  .progress-fill{ box-shadow:0 0 10px rgba(6,75,135,.5); }
   textarea::-webkit-scrollbar{ width:10px; }
   textarea::-webkit-scrollbar-thumb{ background:var(--line); border-radius:999px; border:2px solid transparent; background-clip:padding-box; }
   textarea::-webkit-scrollbar-thumb:hover{ background:var(--ink-soft); }
   textarea::-webkit-scrollbar-track{ background:transparent; }
-  .status.ok{ border-color:rgba(46,107,86,.25); }
-  .status.err{ border-color:rgba(156,59,59,.25); }
+  .status.ok{ border-color:rgba(32,166,106,.35); }
+  .status.err{ border-color:rgba(220,76,76,.35); }
   .chip{ transition:background .2s, color .2s, box-shadow .2s; }
-  .chip.live{ box-shadow:0 4px 10px -6px rgba(46,107,86,.7); }
+  .chip.live{ box-shadow:0 4px 10px -6px rgba(6,75,135,.55); }
   input[type=color]{ transition:box-shadow .15s; }
   input[type=color]:focus{ box-shadow:var(--ring); }
   .lb-bar{ border:1px solid var(--line); }
@@ -457,7 +459,7 @@
               <div class="style-field"><label>Gras</label><label class="check-row"><input type="checkbox" id="img-st-bold"></label></div>
               <div class="style-field"><label>Taille <span id="img-st-size-val" style="text-transform:none;letter-spacing:0;font-weight:400;">(auto)</span></label>
                 <input type="range" id="img-st-size" min="60" max="160" step="10" value="100" aria-label="Taille des corrections"></div>
-              <div class="style-field"><label>Couleur</label><input type="color" id="img-st-color" value="#141210"></div>
+              <div class="style-field"><label>Couleur</label><input type="color" id="img-st-color" value="#142B3D"></div>
               <div class="style-field"><label>Alignement</label>
                 <select class="style-align" id="img-st-align">
                   <option value="auto" selected>Automatique</option>
@@ -576,7 +578,7 @@
               <div class="style-field"><label>Gras</label><label class="check-row"><input type="checkbox" id="pdf-st-bold"></label></div>
               <div class="style-field"><label>Taille <span id="pdf-st-size-val" style="text-transform:none;letter-spacing:0;font-weight:400;">(auto)</span></label>
                 <input type="range" id="pdf-st-size" min="60" max="160" step="10" value="100" aria-label="Taille des corrections"></div>
-              <div class="style-field"><label>Couleur</label><input type="color" id="pdf-st-color" value="#141210"></div>
+              <div class="style-field"><label>Couleur</label><input type="color" id="pdf-st-color" value="#142B3D"></div>
               <div class="style-field"><label>Alignement</label>
                 <select class="style-align" id="pdf-st-align">
                   <option value="auto" selected>Automatique</option>
@@ -843,7 +845,7 @@
     function drawText(str, size, align, bold, weight){
       ensureRoom(bodyLine + 4*s);
       ctx.font = (bold||weight ? '600 ' : '') + (size||bodySize) + 'px ' + fontStack;
-      ctx.fillStyle = '#141210';
+      ctx.fillStyle = '#142B3D';
       const leftAlign = !hasArabic(str);
       ctx.direction = leftAlign ? 'ltr' : 'rtl';
       ctx.textAlign = leftAlign ? 'left' : 'right';
@@ -855,11 +857,11 @@
     const lines = (block.text||'').split('\n');
     ensureRoom(titleSize + bodyLine);
     ctx.font = '600 ' + titleSize + 'px ' + fontStack;
-    ctx.fillStyle = '#1d3f34';
+    ctx.fillStyle = '#064B87';
     ctx.direction = 'ltr'; ctx.textAlign = 'center';
     ctx.fillText(block.label, cw/2, y);
     y += 14*s;
-    ctx.strokeStyle = '#c9c2ae'; ctx.lineWidth = 1.2*s;
+    ctx.strokeStyle = '#DCEAF3'; ctx.lineWidth = 1.2*s;
     ctx.beginPath(); ctx.moveTo(marginX, y); ctx.lineTo(cw - marginX, y); ctx.stroke();
     y += 16*s;
     lines.forEach(ln=>{
@@ -955,7 +957,7 @@
     return {
       bold: $(prefix+'-st-bold').checked,
       scale: scale,
-      color: $(prefix+'-st-color').value || '#141210',
+      color: $(prefix+'-st-color').value || '#142B3D',
       align: $(prefix+'-st-align').value || 'auto'
     };
   }
@@ -1429,7 +1431,7 @@
     function newPage(){
       canvas=document.createElement('canvas'); canvas.width=cw; canvas.height=ch;
       ctx=canvas.getContext('2d'); ctx.fillStyle='#ffffff'; ctx.fillRect(0,0,cw,ch);
-      ctx.direction='ltr'; ctx.textAlign='center'; ctx.fillStyle='#1d3f34';
+      ctx.direction='ltr'; ctx.textAlign='center'; ctx.fillStyle='#064B87';
       ctx.font='600 '+Math.round(15*s)+'px '+fontStack;
       ctx.fillText(block.label||'Tableau', cw/2, Math.round(46*s));
       y=marginTop;
@@ -1441,13 +1443,13 @@
       const h=2*padY+linesMax*lineH;
       if(y+h>ch-marginBottom){ images.push(canvas.toDataURL('image/jpeg',0.9)); newPage(); }
       const tw=widths.reduce((a,b)=>a+b,0);
-      ctx.fillStyle=head?'#efece3':'#fbfaf6';
+      ctx.fillStyle=head?'#E4EFF8':'#F7FBFE';
       ctx.fillRect(marginX, y, tw, h);
-      ctx.strokeStyle='#9b9482'; ctx.lineWidth=1*s;
+      ctx.strokeStyle='#B9D3E6'; ctx.lineWidth=1*s;
       let x=marginX;
       wrapped.forEach((wl,ci)=>{
         const cwid=widths[ci], isAra=hasArabic(cells[ci]||'');
-        ctx.fillStyle='#1a1815';
+        ctx.fillStyle='#142B3D';
         ctx.font=(head?'700 ':'400 ')+size+'px '+fontStack;
         ctx.direction=isAra?'rtl':'ltr';
         ctx.textAlign=isAra?'right':'left';
