@@ -320,6 +320,39 @@
     .step-head{ flex-wrap:wrap; }
     .page-body{ grid-template-columns:1fr; }
   }
+
+  /* ---------- polish / upscale ---------- */
+  body{
+    background:
+      radial-gradient(1100px 520px at 85% -8%, rgba(46,107,86,.16), transparent 62%),
+      radial-gradient(900px 480px at -8% 14%, rgba(169,127,31,.12), transparent 55%),
+      var(--paper);
+    background-attachment:fixed;
+  }
+  .panel-outer{ border-radius:0 16px 16px 16px; }
+  .step{ border-top:3px solid var(--line); border-radius:14px; }
+  .steps > .step:nth-child(2){ border-top-color:var(--gold); }
+  .steps > .step:nth-child(3){ border-top-color:var(--rust); }
+  .seal{ box-shadow:0 10px 22px -14px rgba(46,107,86,.85); }
+  .brand h1{ letter-spacing:-0.015em; }
+  .btn-primary, .btn-rust{ box-shadow:0 8px 18px -10px currentColor; }
+  button:not(:disabled):hover{ transform:translateY(-1px); }
+  button:not(:disabled):active{ transform:translateY(0); }
+  .dropzone:hover{ transform:translateY(-1px); }
+  .dropzone svg{ filter:drop-shadow(0 4px 10px rgba(46,107,86,.35)); }
+  .page-block:hover{ transform:translateY(-2px); }
+  .progress-fill{ box-shadow:0 0 10px rgba(46,107,86,.55); }
+  textarea::-webkit-scrollbar{ width:10px; }
+  textarea::-webkit-scrollbar-thumb{ background:var(--line); border-radius:999px; border:2px solid transparent; background-clip:padding-box; }
+  textarea::-webkit-scrollbar-thumb:hover{ background:var(--ink-soft); }
+  textarea::-webkit-scrollbar-track{ background:transparent; }
+  .status.ok{ border-color:rgba(46,107,86,.25); }
+  .status.err{ border-color:rgba(156,59,59,.25); }
+  .chip{ transition:background .2s, color .2s, box-shadow .2s; }
+  .chip.live{ box-shadow:0 4px 10px -6px rgba(46,107,86,.7); }
+  input[type=color]{ transition:box-shadow .15s; }
+  input[type=color]:focus{ box-shadow:var(--ring); }
+  .lb-bar{ border:1px solid var(--line); }
 </style>
 </head>
 <body>
@@ -435,14 +468,24 @@
               </div>
             </div>
 
+            <div class="opt-row" style="margin-top:18px;">
+              <div class="field" style="max-width:380px;">
+                <label class="field-label" for="img-pdf-mode">Type de PDF exporté</label>
+                <select id="img-pdf-mode">
+                  <option value="text" selected>Texte seul (recommandé)</option>
+                  <option value="layout">Visuel du scan + texte sélectionnable</option>
+                </select>
+              </div>
+            </div>
+
             <div class="actions-row">
-              <button class="btn-primary" id="img-pdf-btn" disabled>Télécharger en PDF (texte sélectionnable)</button>
+              <button class="btn-primary" id="img-pdf-btn" disabled>Télécharger le PDF</button>
               <button class="btn-rust" id="img-word-btn" disabled>Télécharger en Word (.docx)</button>
               <button class="btn-ghost" id="img-preview-btn" disabled>Aperçu du PDF avant téléchargement</button>
             </div>
             <label class="check-row"><input type="checkbox" id="img-show-corrections" checked><span><b>Afficher mes corrections</b> directement sur le document (l'ancien texte est masqué à sa place)</span></label>
             <label class="check-row"><input type="checkbox" id="img-corr-visible" checked><span>Ajouter une section <b>«&nbsp;Texte corrigé&nbsp;»</b> visible en fin de PDF (utile si vous avez modifié le texte)</span></label>
-            <p class="hint">Le PDF conserve le visuel exact du scan ; vos corrections remplacent l'ancien texte à sa place. L'arabe est pris en charge. Cliquez sur une vignette pour zoomer / faire pivoter.</p>
+            <p class="hint">« Texte seul » : un document propre avec uniquement le texte. « Visuel du scan » : le scan d'origine avec chaque correction placée sur le texte. L'arabe est pris en charge. Cliquez sur une vignette pour zoomer.</p>
           </div>
         </section>
 
@@ -540,6 +583,16 @@
                   <option value="left">Gauche</option>
                   <option value="center">Centré</option>
                   <option value="right">Droite</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="opt-row" style="margin-top:18px;display:none;" id="pdf-mode-row">
+              <div class="field" style="max-width:380px;">
+                <label class="field-label" for="pdf-pdf-mode">Type de PDF exporté</label>
+                <select id="pdf-pdf-mode">
+                  <option value="layout" selected>Visuel d'origine + texte sélectionnable</option>
+                  <option value="text">Texte seul</option>
                 </select>
               </div>
             </div>
@@ -1393,6 +1446,24 @@
     return Packer.toBlob(doc);
   }
 
+  async function makeTextPdf(blocks){
+    const { jsPDF } = window.jspdf;
+    const W=595, H=842;
+    let doc=null;
+    let added=false;
+    blocks.forEach(b=>{
+      buildTextPageImages(b, W, H).forEach(img=>{
+        if(!doc){ doc=new jsPDF({ unit:'pt', format:[W,H] }); ensureFontInDoc(doc); }
+        else { doc.addPage([W,H]); }
+        doc.addImage(img,'JPEG',0,0,W,H);
+        added=true;
+      });
+    });
+    if(!doc){ doc=new jsPDF({ unit:'pt', format:[W,H] }); }
+    if(!added){ doc.setFontSize(12); doc.text('Aucun texte à exporter.', 48, 48); }
+    return doc.output('blob');
+  }
+
   function copyAllText(pages){
     const t=pages.map(p=>p.text||'').join('\n\n').trim();
     if(!t){ toast('Aucun texte à copier'); return; }
@@ -1407,17 +1478,22 @@
 
   function tabState(prefix){
     if(prefix==='img'){
-      return { blocks: imgPages.map((p,i)=>({ imageDataUrl:p.imageDataUrl, text:(p.text||'').trim(), lines:p.lines||[], label:'Page '+(i+1) })), showChanges:$('img-show-corrections').checked, style:readStyle('img'), append:$('img-corr-visible').checked, status:'img-status' };
+      return { blocks: imgPages.map((p,i)=>({ imageDataUrl:p.imageDataUrl, text:(p.text||'').trim(), lines:p.lines||[], label:'Page '+(i+1) })), showChanges:$('img-show-corrections').checked, style:readStyle('img'), append:$('img-corr-visible').checked, status:'img-status', mode:$('img-pdf-mode').value };
     }
-    return { blocks: pdfPages.map((p,i)=>({ imageDataUrl:p.imageDataUrl, text:(p.text||'').trim(), lines:p.lines||[], label:(p.fileName||'PDF')+' — page '+(i+1), pageW:p.pageW||p.w||595, pageH:p.pageH||p.h||842 })), showChanges:$('pdf-show-corrections').checked, style:readStyle('pdf'), append:$('pdf-corr-visible').checked, status:'pdf-status' };
+    return { blocks: pdfPages.map((p,i)=>({ imageDataUrl:p.imageDataUrl, text:(p.text||'').trim(), lines:p.lines||[], label:(p.fileName||'PDF')+' — page '+(i+1), pageW:p.pageW||p.w||595, pageH:p.pageH||p.h||842 })), showChanges:$('pdf-show-corrections').checked, style:readStyle('pdf'), append:$('pdf-corr-visible').checked, status:'pdf-status', mode:$('pdf-pdf-mode').value };
   }
 
   (function bindExports(){
     ['img','pdf'].forEach(prefix=>{
+      const buildPdf=async (st)=>{
+        return st.mode==='text'
+          ? await makeTextPdf(st.blocks)
+          : await makePdf(st.blocks, st.showChanges, st.style, st.append);
+      };
       $(prefix+'-pdf-btn').addEventListener('click', async ()=>{
         const st=tabState(prefix);
         $(prefix+'-pdf-btn').disabled=true;
-        try{ const blob=await makePdf(st.blocks, st.showChanges, st.style, st.append); downloadBlob(blob,'document-pdfmagic.pdf'); }
+        try{ const blob=await buildPdf(st); downloadBlob(blob,'document-pdfmagic.pdf'); }
         catch(e){ setStatus(st.status,'Erreur PDF : '+e.message,false); }
         finally{ if(prefix==='img') updateImgChips(); else updatePdfUi(); }
       });
@@ -1431,7 +1507,7 @@
       $(prefix+'-preview-btn').addEventListener('click', async ()=>{
         const st=tabState(prefix);
         toast('Préparation de l’aperçu…');
-        try{ const blob=await makePdf(st.blocks, st.showChanges, st.style, st.append); popPreview(blob); }
+        try{ const blob=await buildPdf(st); popPreview(blob); }
         catch(e){ setStatus(st.status,'Erreur aperçu : '+e.message,false); }
       });
     });
@@ -1871,6 +1947,7 @@
     $('pdf-step-edit').style.display=has?'':'none';
     $('pdf-range-row').style.display=pdfPages.length>1?'':'none';
     $('pdf-download-row').style.display=has?'':'none';
+    $('pdf-mode-row').style.display=has?'':'none';
     $('pdf-show-row').style.display=has?'':'none';
     $('pdf-corr-row').style.display=has?'':'none';
     $('pdf-copy-btn').disabled=!anyText;
